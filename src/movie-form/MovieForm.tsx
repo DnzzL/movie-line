@@ -4,6 +4,15 @@ import { AutoComplete, Button, Form, Input, Select } from 'antd';
 import * as imdb from 'imdb-api';
 import debounce from 'lodash.debounce';
 import React, { useState } from 'react';
+import { fetchMovieTitles } from '../service/api';
+const languages = require('country-data').languages;
+
+type Language = {
+  name: string;
+  alpha2: string;
+  alpha3: string;
+  bibliographic: string;
+};
 
 type Props = {
   imdbId: string;
@@ -14,7 +23,7 @@ type Props = {
 export const MovieForm = ({
   imdbId,
   onFinishHandle,
-  onFinishFailedHandle
+  onFinishFailedHandle,
 }: Props) => {
   const [results, setResults] = useState<imdb.SearchResults>();
   const [options, setOptions] = useState<{ value: string }[]>([]);
@@ -25,22 +34,8 @@ export const MovieForm = ({
   const { Option } = Select;
   const { TextArea } = Input;
   const [form] = Form.useForm();
-
-  const searchTitles = async (searchText: string) => {
-    return await imdb.search(
-      {
-        name: searchText
-      },
-      {
-        apiKey: '8bba157b'
-      }
-    );
-  };
-
   const onSearch = async (searchText: string) => {
-    const queryResults = (await searchTitles(searchText)) || {
-      results: []
-    };
+    const queryResults = await fetchMovieTitles(searchText);
     setResults(queryResults);
 
     const options = [];
@@ -53,10 +48,10 @@ export const MovieForm = ({
 
   const onTitleSelect = async (data: string) => {
     setMovieTitle(data);
-    if (results) {
-      imdbId = results.results.filter(e => e.title === data)[0].imdbid;
+    if (results && results.results) {
+      imdbId = results.results.find((e) => e.title === data)!.imdbid;
       form.setFieldsValue({
-        imdbId
+        imdbId,
       });
     }
   };
@@ -65,8 +60,8 @@ export const MovieForm = ({
     <Form
       form={form}
       name='movie-form'
-      onFinish={values => onFinishHandle(values)}
-      onFinishFailed={errorInfo => onFinishFailedHandle(errorInfo)}
+      onFinish={(values) => onFinishHandle(values)}
+      onFinishFailed={(errorInfo) => onFinishFailedHandle(errorInfo)}
     >
       <Form.Item>
         <AutoComplete
@@ -94,9 +89,9 @@ export const MovieForm = ({
             option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
         >
-          <Option value='en'>English</Option>
-          <Option value='es'>Spanish</Option>
-          <Option value='fr'>French</Option>
+          {languages.all.map((l: Language) => (
+            <Option value={l.name}>{l.name}</Option>
+          ))}
         </Select>
       </Form.Item>
 
@@ -105,7 +100,7 @@ export const MovieForm = ({
         name='replica'
         rules={[{ required: true, message: 'Please input the movie replica' }]}
       >
-        <TextArea rows={3} onChange={e => setMovieReplica(e.target.value)} />
+        <TextArea rows={3} onChange={(e) => setMovieReplica(e.target.value)} />
       </Form.Item>
 
       <Form.Item>

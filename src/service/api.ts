@@ -1,3 +1,4 @@
+import imdb from 'imdb-api';
 const axios = require('axios').default;
 
 export async function fetchSubtitles(
@@ -9,10 +10,23 @@ export async function fetchSubtitles(
     const response = await axios.post('http://localhost:8000/subtitles', {
       imdbId,
       language,
-      replica
+      replica,
     });
     return response.data;
   } catch (error) {
     throw new Error('Could not get subtitles');
+  }
+}
+
+export async function fetchMovieTitles(
+  title: string
+): Promise<imdb.SearchResults> {
+  try {
+    const response = await axios.post('http://localhost:8000/movies', {
+      title,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error('Could not get movies');
   }
 }
